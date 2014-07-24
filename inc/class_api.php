@@ -10,36 +10,56 @@
 
 class api {
 
+	//the action we want mybb to perform
 	protected $act;
+	
+	//do we have errors?
+	protected $errors = array();
+	
+	//did we have success?
+	protected $success;
+	
+	//do we have a message to display?
+	protected $result;
 	
 	public function run()
 	{
 		$act = $_GET['act'];
 		
 		//define valid actions
-		//Todo: add functions for verification, password change, email change
 		$valid_actions = array('register_user');
 
 		//see if we have a valid action defined
 		if (!in_array($act, $valid_actions))
 		{
 			//we do not have a valid action defined, prevent this script from running
-			die("Unauthorized. You did not provide a valid action."); 
+			$this->errors[] = array('unauthorized' => 'You did not provide a valid action.');
+			$this->success = false;
+			echo $this->output_result();
+			exit();
+			
 		}
 		
 		$this->act = $act;
-		
-		echo $this->act;
-		
+				
 		return $this->$act();
 		
-		/*$this->step = $step;
-            
-        $method = strtolower(Request::getMethod());
-        $action = $method.'_'.$step;
-            
-        return $this->$action();*/
 		
+	}
+	
+	public function output_result()
+	{
+		//see if we have an error 
+		if (!$this->success)
+		{
+			//an error has occurred
+			return json_encode(array('success' => $this->success, 'errors' => $this->errors));
+		}
+		else
+		{	
+			//an error has not occurred
+			return json_encode(array('success' => $this->success, 'result' => $this->result));
+		}
 	}
 	
 	public function register_user()
@@ -52,7 +72,10 @@ class api {
 		if (!isset($username) || !isset($password) || !isset($email))
 		{
 			//we do not have a username, password, or email
-			die("Unauthorized. Either a username, password, or email was not provided.");
+			$this->errors[] = array('unauthorized' => 'Either a username, password, or email was not provided.');
+			$this->success = false;
+			echo $this->output_result();
+			exit();
 		}
 		else
 		{
@@ -69,15 +92,19 @@ class api {
 			$userhandler->set_data($user);
 			if($userhandler->validate_user()) {
 				$newuser = $userhandler->insert_user();
-				//Todo: Ouptut json message that says it was successfull
-				echo $newuser;
+				
+				//the user was successfully registered
+				$this->success = true;
+				$this->result = "The user has been registered successfully.";
+				
+				//output results, and exit
+				echo $this->output_result();
+				exit();
 			} 
-			else
-			{
-			  //Todo: output json error message saying what failed  
-			}
 		}
 	}
+	
+	
 	
 }
 
